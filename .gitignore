@@ -3,3 +3,4 @@ datasets/
 runs/
 .DS_Store
 plate_r.zip
+.env
