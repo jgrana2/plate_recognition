@@ -4,9 +4,24 @@ import numpy as np
 from ultralytics import YOLO
 import time
 import logging
+from image_api import print_license_plate
+import threading
+
+def iou(box1, box2):
+    """ Calculate the Intersection over Union (IoU) between two bounding boxes. """
+    x1_inter = max(box1[0], box2[0])
+    y1_inter = max(box1[1], box2[1])
+    x2_inter = min(box1[2], box2[2])
+    y2_inter = min(box1[3], box2[3])
+
+    inter_area = max(0, x2_inter - x1_inter) * max(0, y2_inter - y1_inter)
+    box1_area = (box1[2] - box1[0]) * (box1[3] - box1[1])
+    box2_area = (box2[2] - box2[0]) * (box2[3] - box2[1])
+
+    return inter_area / float(box1_area + box2_area - inter_area) if (box1_area + box2_area - inter_area) > 0 else 0
 
 # Set the logging level for 'ultralytics' to WARNING to suppress INFO messages
-logging.getLogger('ultralytics').setLevel(logging.WARNING)
+logging.getLogger('ultralytics').setLevel(logging.NOTSET)
 
 # Load the YOLOv8 model
 np_model = YOLO('yolo11n.pt')
@@ -33,7 +48,7 @@ last_detections = None
 # Variables to store the best detection information
 best_confidence = 0.0
 best_car_img_masked = None
-last_car_id = None  # Store the ID of the last detected car
+detected_boxes = []  # Track detected boxes across frames
 
 for packet in container.demux(video=0):
     for frame in packet.decode():
@@ -51,6 +66,7 @@ for packet in container.demux(video=0):
             car_detected_in_frame = False
             max_confidence_in_frame = 0.0  # To track maximum confidence in this frame
             current_car_id = None  # Track the currently detected car ID
+            current_detected_boxes = []  # Store bounding boxes of current detections
 
             if last_detections is not None:
                 for result in last_detections:
@@ -60,11 +76,26 @@ for packet in container.demux(video=0):
                     
                     for box, cls_id, conf in zip(boxes, class_ids, confidences):
                         if int(cls_id) in car_class_ids:
+                            current_detected_boxes.append(box)  # Add current box to the list
                             car_detected_in_frame = True  # Set flag if car is detected
-                            if conf > max_confidence_in_frame:
+
+                            # New car detection check
+                            is_new_car = True
+                            for prev_box in detected_boxes:  # Check against previous detections
+                                if iou(prev_box, box) > 0.5:  # Using IoU threshold
+                                    is_new_car = False
+                                    break
+                            
+                            if is_new_car:
+                                print("Nuevo carro detectado")
+                                best_confidence = 0.0
+                                best_car_img_masked = None
+                            # else:
+                                # print("Same old car")
+
+                            if is_new_car and conf > max_confidence_in_frame:
                                 max_confidence_in_frame = conf
-                                x1, y1, x2, y2 = box
-                                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                                x1, y1, x2, y2 = map(int, box)
 
                                 # Extract the car image from the frame
                                 car_img = img[y1:y2, x1:x2].copy()
@@ -86,17 +117,22 @@ for packet in container.demux(video=0):
                 if car_detected_in_frame:
                     if max_confidence_in_frame > best_confidence:
                         best_confidence = max_confidence_in_frame
-
+                
                         # Save the best car image immediately
-                        filename = f'car.png'
-                        print(f"Saving the best car image as {filename} with confidence {best_confidence}")
-                        cv.imwrite(filename, best_car_img_masked)
+                        filename = 'car.png'
+                        print(f"Guardando con confianza {best_confidence:.2f}")
+                
+                        # Check if the image is not empty
+                        if best_car_img_masked is not None and best_car_img_masked.size > 0:
+                            cv.imwrite(filename, best_car_img_masked)
+                        else:
+                            print("Error guardando la imagen")
+                        
+                        threading.Thread(target=print_license_plate).start()                
 
-            # Reset best confidence if no car was detected in this frame
-            if not car_detected_in_frame:
-                best_confidence = 0.0
-                best_car_img_masked = None
-                print('Car not detected')
+            # Update detected boxes for the next frame
+            if current_detected_boxes is not None:
+                detected_boxes = current_detected_boxes
 
         # Draw the last detections on the current frame
         if last_detections is not None:
@@ -106,13 +142,11 @@ for packet in container.demux(video=0):
                 # Filter detections for 'car' class only
                 for box, cls_id in zip(boxes, class_ids):
                     if int(cls_id) in car_class_ids:
-                        x1, y1, x2, y2 = box
-                        x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                        x1, y1, x2, y2 = map(int, box)
                         # Draw bounding box on the main image
                         cv.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         # Optionally, display the class name
                         cv.putText(img, 'Car', (x1, y1 - 10), cv.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-
 
         # Display the video frame
         cv.imshow('Video Stream', img)
