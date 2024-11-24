@@ -29,13 +29,13 @@ def local_image_to_data_url(image_path):
     # Construct the Data URL
     return f"data:{mime_type};base64,{base64_encoded_data}"
 
-def print_license_plate():
+def print_license_plate(filename):
 
     # Get the directory where the current script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
     
     # Define the image file name
-    image_filename = 'car.png'
+    image_filename = filename
     
     # Construct the full path to the image
     image_path = os.path.join(script_dir, image_filename)
