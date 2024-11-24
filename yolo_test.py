@@ -50,7 +50,7 @@ class VideoProcessor:
         logger.info(f"Car class IDs identified: {self.car_class_ids}")
         
         # Processing parameters
-        self.detection_interval = 1.0  # seconds
+        self.detection_interval = 10.0  # seconds
         self.last_detection_time = time.time()
         self.last_detections = None
         self.best_confidence = 0.0
