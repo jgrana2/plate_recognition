@@ -5,3 +5,4 @@ runs/
 plate_r.zip
 .env
 car.png
+__pycache__/
