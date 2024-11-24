@@ -110,8 +110,8 @@ for packet in container.demux(video=0):
                                 cv.circle(mask, (radius, height - radius), radius, 0, -1)
                                 cv.circle(mask, (width - radius, height - radius), radius, 0, -1)
 
-                                # Apply the mask to the car image
-                                best_car_img_masked = cv.bitwise_and(car_img, car_img, mask=mask)
+                                # Apply any image processing here
+                                best_car_img_masked = car_img
 
                 # Only update best confidence if a car was detected
                 if car_detected_in_frame:
