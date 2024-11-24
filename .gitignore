@@ -6,3 +6,6 @@ plate_r.zip
 .env
 car.png
 __pycache__/
+car_2024*
+videos/
+car_detection.log
