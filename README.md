@@ -94,7 +94,7 @@ export OPENAI_API_KEY=su_clave_de_api_de_openai_aquí  # En Windows use `set`
 Ejecute el script principal:
 
 ```bash
-python main.py
+python yolo_test.py
 ```
 
 ### Procesamiento de Archivos de Video
@@ -103,7 +103,7 @@ Coloque sus archivos de video en el directorio `videos/`. Los formatos soportado
 
 ### Procesamiento de Flujos RTSP
 
-La URL del flujo RTSP se configura en la función `main()` dentro de `main.py`. Actualice la variable `rtsp_url` con su URL de flujo:
+La URL del flujo RTSP se configura en la función `main()` dentro de `yolo_test.py`. Actualice la variable `rtsp_url` con su URL de flujo:
 
 ```python
 rtsp_url = 'rtsp://usuario:contraseña@dirección_ip:puerto/stream'
@@ -117,7 +117,7 @@ La aplicación se conectará al flujo RTSP después de procesar los archivos de 
 car-detection/
 ├── cars/               # Imágenes guardadas de coches detectados
 ├── videos/             # Archivos de video para procesar
-├── main.py             # Script principal de la aplicación
+├── yolo_test.py             # Script principal de la aplicación
 ├── image_api.py        # Script de reconocimiento de matrículas
 ├── requirements.txt    # Dependencias de Python
 ├── .env                # Variables de entorno (Clave de API de OpenAI)
@@ -127,7 +127,7 @@ car-detection/
 
 ## Registro de Eventos (Logging)
 
-Los registros se guardan en `car_detection.log` y también se muestran en la consola. Los niveles y formatos de registro se configuran en `main.py`:
+Los registros se guardan en `car_detection.log` y también se muestran en la consola. Los niveles y formatos de registro se configuran en `yolo_test.py`:
 
 ```python
 logging.basicConfig(

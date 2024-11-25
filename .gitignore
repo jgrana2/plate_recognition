@@ -9,3 +9,4 @@ __pycache__/
 cars/
 videos/
 car_detection.log
+detected_plates.csv
