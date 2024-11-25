@@ -117,7 +117,7 @@ La aplicación se conectará al flujo RTSP después de procesar los archivos de 
 car-detection/
 ├── cars/               # Imágenes guardadas de coches detectados
 ├── videos/             # Archivos de video para procesar
-├── yolo_test.py             # Script principal de la aplicación
+├── yolo_test.py        # Script principal de la aplicación
 ├── image_api.py        # Script de reconocimiento de matrículas
 ├── requirements.txt    # Dependencias de Python
 ├── .env                # Variables de entorno (Clave de API de OpenAI)
