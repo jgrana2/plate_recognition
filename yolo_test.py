@@ -156,22 +156,6 @@ class VideoProcessor:
                 # No cars detected in this frame
                 self.detected_boxes = []
         
-        # Draw bounding box around the largest detected car only
-        if self.last_detections is not None and self.detected_boxes:
-            largest_box = self.detected_boxes[0]
-            
-            x1, y1, x2, y2 = map(int, largest_box)
-            cv.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv.putText(
-                frame, 
-                'Car', 
-                (x1, y1 - 10), 
-                cv.FONT_HERSHEY_SIMPLEX, 
-                0.9, 
-                (0, 255, 0), 
-                2
-            )
-        
         return frame
 
     def process_rtsp_stream(self, rtsp_url):
@@ -184,17 +168,11 @@ class VideoProcessor:
             for packet in container.demux(video=0):
                 for frame in packet.decode():
                     img = frame.to_ndarray(format='bgr24')
-                    processed_frame = self.process_frame(img, "rtsp")
-                    
-                    cv.imshow('RTSP Stream', processed_frame)
-                    if cv.waitKey(1) & 0xFF == ord('q'):
-                        logger.info("User requested exit from RTSP stream")
-                        return
+                    self.process_frame(img, "rtsp")
+                    time.sleep(1/30.0)  # Add this line to simulate real-time delay
                     
         except Exception as e:
             logger.error(f"Error processing RTSP stream: {str(e)}")
-        finally:
-            cv.destroyAllWindows()
 
     def process_video_file(self, video_path):
         """Process a single video file"""
@@ -213,22 +191,13 @@ class VideoProcessor:
                 if not ret:
                     break
                 
-                processed_frame = self.process_frame(frame, filename)
+                self.process_frame(frame, filename)
+                time.sleep(1/30.0)  # Add this line to simulate real-time delay
                 
-                # Calculate progress percentage
-                progress = (self.frame_count / total_frames) * 100
-                logger.debug(f"Processing progress: {progress:.1f}%")
-                
-                cv.imshow(f'Video: {filename}', processed_frame)
-                if cv.waitKey(1) & 0xFF == ord('q'):
-                    logger.info(f"User requested exit from video: {filename}")
-                    break
-                    
         except Exception as e:
             logger.error(f"Error processing video file {video_path}: {str(e)}")
         finally:
             cap.release()
-            cv.destroyAllWindows()
 
     def process_video_folder(self, folder_path):
         """Process all video files in a folder"""
