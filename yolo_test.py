@@ -25,6 +25,8 @@ logging.getLogger('ultralytics').setLevel(logging.WARNING)
 logging.getLogger('PIL').setLevel(logging.WARNING)
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
 logging.getLogger('av').setLevel(logging.WARNING)
+logging.getLogger('httpx').setLevel(logging.WARNING)
+logging.getLogger('openai').setLevel(logging.WARNING)
 
 # Create logger for this application
 logger = logging.getLogger(__name__)
@@ -32,23 +34,23 @@ logger = logging.getLogger(__name__)
 class VideoProcessor:
     def __init__(self, model_path='yolo11n.pt'):
         logger.info("Initializing VideoProcessor...")
-        
+
         # Load the YOLO model
         logger.info("Loading YOLO model...")
         self.model = YOLO(model_path)
         logger.info("YOLO model loaded successfully")
-        
+
         # Get class names and car class IDs
         self.class_names = self.model.names
-        self.car_class_ids = [cls_id for cls_id, name in self.class_names.items() 
+        self.car_class_ids = [cls_id for cls_id, name in self.class_names.items()
                               if name.lower() == 'car']
-        
+
         if not self.car_class_ids:
             logger.error("Class 'car' not found in model's class names.")
             raise ValueError("Car class not found in model")
-            
+
         logger.info(f"Car class IDs identified: {self.car_class_ids}")
-        
+
         # Processing parameters
         self.detection_interval = 10.0  # seconds
         self.last_detection_time = time.time()
@@ -58,6 +60,7 @@ class VideoProcessor:
         self.detected_boxes = []
         self.frame_count = 0
         self.cars_detected = 0
+        self.last_summary_time = time.time()
         
     def iou(self, box1, box2):
         """Calculate Intersection over Union between two boxes"""
@@ -175,60 +178,61 @@ class VideoProcessor:
         return frame
 
     def process_rtsp_stream(self, rtsp_url):
-        """Process RTSP stream"""
+        """Process RTSP stream in headless mode"""
         logger.info(f"Connecting to RTSP stream: {rtsp_url}")
         try:
             container = av.open(rtsp_url)
             logger.info("Successfully connected to RTSP stream")
-            
+
+            logger.info("Starting frame processing...")
             for packet in container.demux(video=0):
                 for frame in packet.decode():
                     img = frame.to_ndarray(format='bgr24')
-                    processed_frame = self.process_frame(img, "rtsp")
-                    
-                    cv.imshow('RTSP Stream', processed_frame)
-                    if cv.waitKey(1) & 0xFF == ord('q'):
-                        logger.info("User requested exit from RTSP stream")
-                        return
-                    
+                    self.process_frame(img, "rtsp")
+
+                    # Log summary every 10 seconds
+                    current_time = time.time()
+                    if current_time - self.last_summary_time >= 10.0:
+                        logger.info(f"Status: {self.frame_count} frames processed, {self.cars_detected} cars detected")
+                        self.last_summary_time = current_time
+
+        except KeyboardInterrupt:
+            logger.info("Interrupted by user")
         except Exception as e:
             logger.error(f"Error processing RTSP stream: {str(e)}")
-        finally:
-            cv.destroyAllWindows()
+            import traceback
+            logger.error(traceback.format_exc())
 
     def process_video_file(self, video_path):
-        """Process a single video file"""
+        """Process a single video file in headless mode"""
         logger.info(f"Processing video file: {video_path}")
         try:
             cap = cv.VideoCapture(str(video_path))
             filename = Path(video_path).stem
-            
+
             # Get video properties
             fps = cap.get(cv.CAP_PROP_FPS)
             total_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
             logger.info(f"Video properties - FPS: {fps}, Total frames: {total_frames}")
-            
+
             while cap.isOpened():
                 ret, frame = cap.read()
                 if not ret:
                     break
-                
-                processed_frame = self.process_frame(frame, filename)
-                
-                # Calculate progress percentage
-                progress = (self.frame_count / total_frames) * 100
-                logger.debug(f"Processing progress: {progress:.1f}%")
-                
-                cv.imshow(f'Video: {filename}', processed_frame)
-                if cv.waitKey(1) & 0xFF == ord('q'):
-                    logger.info(f"User requested exit from video: {filename}")
-                    break
-                    
+
+                self.process_frame(frame, filename)
+
+                # Log summary every 10 seconds
+                current_time = time.time()
+                if current_time - self.last_summary_time >= 10.0:
+                    progress = (self.frame_count / total_frames) * 100 if total_frames > 0 else 0
+                    logger.info(f"Status: {progress:.1f}% complete, {self.cars_detected} cars detected")
+                    self.last_summary_time = current_time
+
         except Exception as e:
             logger.error(f"Error processing video file {video_path}: {str(e)}")
         finally:
             cap.release()
-            cv.destroyAllWindows()
 
     def process_video_folder(self, folder_path):
         """Process all video files in a folder"""
@@ -255,20 +259,29 @@ class VideoProcessor:
 
 def main():
     """Main function to run the video processor"""
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Car detection and license plate recognition (headless mode)')
+    parser.add_argument('--rtsp-url', type=str,
+                       default='rtsp://admin:@192.168.1.10:554/stream1',
+                       help='RTSP stream URL')
+    parser.add_argument('--video-folder', type=str,
+                       default='videos/',
+                       help='Folder containing video files to process')
+    args = parser.parse_args()
+
     processor = VideoProcessor()
-    
+
     # Process video files first
-    video_folder = "videos/"
     logger.info("Starting video folder processing...")
-    processor.process_video_folder(video_folder)
+    processor.process_video_folder(args.video_folder)
     logger.info("Completed video folder processing")
-    
+
     # Then process RTSP stream
-    rtsp_url = 'rtsp://admin:@192.168.1.10:554/stream1'
     logger.info("Starting RTSP stream processing...")
-    processor.process_rtsp_stream(rtsp_url)
+    processor.process_rtsp_stream(args.rtsp_url)
     logger.info("Completed RTSP stream processing")
-    
+
     # Print final statistics
     logger.info("=== Processing Complete ===")
     logger.info(f"Total frames processed: {processor.frame_count}")
