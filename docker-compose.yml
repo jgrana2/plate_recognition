@@ -1,0 +1,42 @@
+services:
+  plate-recognition:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    container_name: plate-recognition-headless
+    restart: unless-stopped
+    
+    env_file:
+      - .env
+    
+    environment:
+      PYTHONUNBUFFERED: "1"
+    
+    volumes:
+      - ./yolo11n.pt:/app/yolo11n.pt:ro
+      - ./yolo8n.pt:/app/yolo8n.pt:ro
+      - ./videos:/app/videos:ro
+      - ./cars:/app/cars
+      - ./detected_plates.csv:/app/detected_plates.csv
+      - ./car_detection.log:/app/car_detection.log
+    
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/car_detection.log"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
