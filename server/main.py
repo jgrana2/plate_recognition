@@ -22,9 +22,15 @@ api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 # Directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "static", "uploads")
-DB_PATH = os.path.join(BASE_DIR, "plates.db")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+DB_PATH = os.path.join(DATA_DIR, "plates.db")
 
+# Ensure directories exist
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
+
+print(f"Database path: {DB_PATH}")
+print(f"Data directory exists: {os.path.exists(DATA_DIR)}")
 
 # Mount static files
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")

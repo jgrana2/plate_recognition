@@ -9,6 +9,7 @@ COPY . .
 
 # Create the uploads directory
 RUN mkdir -p static/uploads
+RUN mkdir -p data
 
 EXPOSE 8000
 

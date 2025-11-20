@@ -6,7 +6,7 @@ services:
       - "8000:8000"
     volumes:
       - ./static/uploads:/app/static/uploads
-      - ./plates.db:/app/plates.db
+      - ./data:/app/data
     environment:
       - SERVER_API_KEY=${SERVER_API_KEY:-change_me_please}
     restart: unless-stopped
