@@ -15,6 +15,14 @@
         .modal-img {
             width: 100%;
         }
+        .badge-unknown {
+            background-color: #6c757d;
+            color: #fff;
+        }
+        .badge-info-detail {
+            background-color: #0dcaf0;
+            color: #052c3b;
+        }
     </style>
 </head>
 <body>
@@ -26,6 +34,10 @@
                     <tr>
                         <th>ID</th>
                         <th>Placa</th>
+                        <th>Marca</th>
+                        <th>Modelo</th>
+                        <th>Color</th>
+                        <th>Tipo de carrocería</th>
                         <th>Timestamp</th>
                         <th>Imagen</th>
                         <th>Acciones</th>
@@ -33,15 +45,37 @@
                 </thead>
                 <tbody>
                     {% for plate in plates %}
+                    {% set marca = plate["brand"] or "No detectado" %}
+                    {% set modelo = plate["model"] or "No detectado" %}
+                    {% set color = plate["color"] or "No detectado" %}
+                    {% set carroceria = plate["body_type"] or "No detectado" %}
+                    {% set placa = plate["plate_number"] %}
                     <tr>
                         <td>{{ plate.id }}</td>
-                        <td><span class="badge bg-primary fs-6">{{ plate.plate_number }}</span></td>
+                        <td><span class="badge bg-primary fs-6">{{ placa }}</span></td>
+                        <td>
+                            <span class="badge {{ 'badge-unknown' if marca == 'No detectado' else 'badge-info-detail' }}">{{ marca }}</span>
+                        </td>
+                        <td>
+                            <span class="badge {{ 'badge-unknown' if modelo == 'No detectado' else 'badge-info-detail' }}">{{ modelo }}</span>
+                        </td>
+                        <td>
+                            <span class="badge {{ 'badge-unknown' if color == 'No detectado' else 'badge-info-detail' }}">{{ color }}</span>
+                        </td>
+                        <td>
+                            <span class="badge {{ 'badge-unknown' if carroceria == 'No detectado' else 'badge-info-detail' }}">{{ carroceria }}</span>
+                        </td>
                         <td>{{ plate.timestamp }}</td>
                         <td>
                             <img src="/static/uploads/{{ plate.image_filename }}" 
                                  class="plate-img rounded" 
-                                 alt="{{ plate.plate_number }}"
-                                 onclick="showImage(this.src, '{{ plate.plate_number }}')">
+                                 alt="{{ placa }}"
+                                 data-placa="{{ placa }}"
+                                 data-marca="{{ marca }}"
+                                 data-modelo="{{ modelo }}"
+                                 data-color="{{ color }}"
+                                 data-carroceria="{{ carroceria }}"
+                                 onclick="showImage(this)">
                         </td>
                         <td>
                             <button
@@ -68,7 +102,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <img src="" id="modalImage" class="modal-img">
+                    <img src="" id="modalImage" class="modal-img mb-3">
+                    <ul class="list-group" id="modalDetails"></ul>
                 </div>
             </div>
         </div>
@@ -79,10 +114,28 @@
         const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
         const modalImage = document.getElementById('modalImage');
         const modalTitle = document.getElementById('modalTitle');
+        const modalDetails = document.getElementById('modalDetails');
 
-        function showImage(src, plate) {
-            modalImage.src = src;
-            modalTitle.textContent = `Plate: ${plate}`;
+        function renderDetail(label, value) {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            const badge = document.createElement('span');
+            badge.textContent = value;
+            badge.className = value === 'No detectado' ? 'badge rounded-pill badge-unknown' : 'badge rounded-pill badge-info-detail';
+            li.textContent = label;
+            li.appendChild(badge);
+            return li;
+        }
+
+        function showImage(imgEl) {
+            modalImage.src = imgEl.src;
+            const plate = imgEl.dataset.placa || 'No detectado';
+            modalTitle.textContent = `Placa: ${plate}`;
+            modalDetails.innerHTML = '';
+            modalDetails.appendChild(renderDetail('Marca', imgEl.dataset.marca || 'No detectado'));
+            modalDetails.appendChild(renderDetail('Modelo', imgEl.dataset.modelo || 'No detectado'));
+            modalDetails.appendChild(renderDetail('Color', imgEl.dataset.color || 'No detectado'));
+            modalDetails.appendChild(renderDetail('Tipo de carrocería', imgEl.dataset.carroceria || 'No detectado'));
             imageModal.show();
         }
 

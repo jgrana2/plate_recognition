@@ -38,6 +38,9 @@ app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), na
 # Templates
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
+# Defaults
+NO_DETECTADO = "No detectado"
+
 # Database Setup
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -47,6 +50,10 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             plate_number TEXT NOT NULL,
             image_filename TEXT NOT NULL,
+            brand TEXT DEFAULT "No detectado",
+            model TEXT DEFAULT "No detectado",
+            color TEXT DEFAULT "No detectado",
+            body_type TEXT DEFAULT "No detectado",
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -73,15 +80,32 @@ async def read_root(request: Request):
     conn.close()
     return templates.TemplateResponse("index.html", {"request": request, "plates": plates})
 
+def normalize_field(value: str | None) -> str:
+    if value is None:
+        return NO_DETECTADO
+    cleaned = value.strip()
+    return cleaned if cleaned else NO_DETECTADO
+
+
 @app.post("/upload")
 async def upload_plate(
     plate_number: Annotated[str, Form()],
+    brand: Annotated[str | None, Form(NO_DETECTADO)] = NO_DETECTADO,
+    model: Annotated[str | None, Form(NO_DETECTADO)] = NO_DETECTADO,
+    color: Annotated[str | None, Form(NO_DETECTADO)] = NO_DETECTADO,
+    body_type: Annotated[str | None, Form(NO_DETECTADO, alias="body_type")] = NO_DETECTADO,
     image: Annotated[UploadFile, File()],
     api_key: str = Depends(get_api_key)
 ):
+    normalized_plate = normalize_field(plate_number).upper()
+    normalized_brand = normalize_field(brand)
+    normalized_model = normalize_field(model)
+    normalized_color = normalize_field(color)
+    normalized_body_type = normalize_field(body_type)
+
     # Generate a unique filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{plate_number}_{timestamp}_{image.filename}"
+    filename = f"{normalized_plate}_{timestamp}_{image.filename}"
     file_path = os.path.join(UPLOAD_DIR, filename)
 
     # Save the file
@@ -93,13 +117,31 @@ async def upload_plate(
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO plates (plate_number, image_filename) VALUES (?, ?)",
-        (plate_number, filename)
+        """
+        INSERT INTO plates (plate_number, image_filename, brand, model, color, body_type)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            normalized_plate,
+            filename,
+            normalized_brand,
+            normalized_model,
+            normalized_color,
+            normalized_body_type
+        )
     )
     conn.commit()
     conn.close()
 
-    return {"status": "success", "filename": filename, "plate": plate_number}
+    return {
+        "status": "success",
+        "filename": filename,
+        "plate": normalized_plate,
+        "brand": normalized_brand,
+        "model": normalized_model,
+        "color": normalized_color,
+        "body_type": normalized_body_type
+    }
 
 
 @app.delete("/plates/{plate_id}")
