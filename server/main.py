@@ -90,11 +90,11 @@ def normalize_field(value: str | None) -> str:
 @app.post("/upload")
 async def upload_plate(
     plate_number: Annotated[str, Form()],
-    brand: Annotated[str | None, Form(NO_DETECTADO)] = NO_DETECTADO,
-    model: Annotated[str | None, Form(NO_DETECTADO)] = NO_DETECTADO,
-    color: Annotated[str | None, Form(NO_DETECTADO)] = NO_DETECTADO,
-    body_type: Annotated[str | None, Form(NO_DETECTADO, alias="body_type")] = NO_DETECTADO,
     image: Annotated[UploadFile, File()],
+    brand: Annotated[str | None, Form()] = None,
+    model: Annotated[str | None, Form()] = None,
+    color: Annotated[str | None, Form()] = None,
+    body_type: Annotated[str | None, Form(alias="body_type")] = None,
     api_key: str = Depends(get_api_key)
 ):
     normalized_plate = normalize_field(plate_number).upper()
