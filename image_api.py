@@ -7,11 +7,16 @@ import json
 import csv
 import datetime
 import re
+import requests
+
 # Load environment variables from a .env file
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 os.environ["OPENAI_API_KEY"] = openai_api_key
 client = OpenAI()
+
+SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8000")
+SERVER_API_KEY = os.getenv("SERVER_API_KEY", "change_me_please")
 
 CSV_FILE = 'detected_plates.csv'
 
@@ -47,6 +52,23 @@ def write_to_csv(plate_number, image_filename):
     with open(CSV_FILE, mode='a', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow([plate_number, date_time, image_filename])
+
+def upload_to_server(plate_number, image_path):
+    url = f"{SERVER_URL}/upload"
+    headers = {"X-API-Key": SERVER_API_KEY}
+    
+    try:
+        with open(image_path, 'rb') as f:
+            files = {'image': f}
+            data = {'plate_number': plate_number}
+            response = requests.post(url, headers=headers, files=files, data=data)
+            
+        if response.status_code == 200:
+            print(f"Successfully uploaded plate {plate_number} to server.")
+        else:
+            print(f"Failed to upload to server: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"Error uploading to server: {e}")
 
 def is_valid_plate(plate):
     # Example pattern: 3 letters followed by 3 digits
@@ -96,6 +118,7 @@ def print_license_plate(filename):
 
             if plate_number != "No Detectada" and is_valid_plate(plate_number):
                 write_to_csv(plate_number, image_filename)
+                upload_to_server(plate_number, image_path)
 
             return plate_number
         except json.JSONDecodeError:
