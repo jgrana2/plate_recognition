@@ -100,3 +100,30 @@ async def upload_plate(
     conn.close()
 
     return {"status": "success", "filename": filename, "plate": plate_number}
+
+
+@app.delete("/plates/{plate_id}")
+async def delete_plate(plate_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT image_filename FROM plates WHERE id = ?", (plate_id,))
+    plate = cursor.fetchone()
+
+    if not plate:
+        conn.close()
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plate not found")
+
+    cursor.execute("DELETE FROM plates WHERE id = ?", (plate_id,))
+    conn.commit()
+    conn.close()
+
+    image_path = os.path.join(UPLOAD_DIR, plate["image_filename"])
+    if os.path.exists(image_path):
+        try:
+            os.remove(image_path)
+        except OSError:
+            # File might already be gone; ignore so API still succeeds
+            pass
+
+    return {"status": "deleted", "id": plate_id}

@@ -28,6 +28,7 @@
                         <th>Plate Number</th>
                         <th>Timestamp</th>
                         <th>Image</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -41,6 +42,15 @@
                                  class="plate-img rounded" 
                                  alt="{{ plate.plate_number }}"
                                  onclick="showImage(this.src, '{{ plate.plate_number }}')">
+                        </td>
+                        <td>
+                            <button
+                                class="btn btn-sm btn-danger"
+                                data-plate-id="{{ plate.id }}"
+                                data-plate-number="{{ plate.plate_number }}"
+                                onclick="deletePlate(this)">
+                                Delete
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -74,6 +84,30 @@
             modalImage.src = src;
             modalTitle.textContent = `Plate: ${plate}`;
             imageModal.show();
+        }
+
+        async function deletePlate(button) {
+            const id = button.dataset.plateId;
+            const plateNumber = button.dataset.plateNumber;
+            if (!confirm(`Delete plate ${plateNumber}?`)) {
+                return;
+            }
+
+            const row = button.closest('tr');
+            button.disabled = true;
+            button.textContent = 'Deleting...';
+
+            try {
+                const response = await fetch(`/plates/${id}`, { method: 'DELETE' });
+                if (!response.ok) {
+                    throw new Error('Failed to delete plate');
+                }
+                row?.remove();
+            } catch (error) {
+                alert('Unable to delete plate. Please try again.');
+                button.disabled = false;
+                button.textContent = 'Delete';
+            }
         }
     </script>
 </body>
