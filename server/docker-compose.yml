@@ -1,0 +1,12 @@
+services:
+  plate-server:
+    build: .
+    container_name: plate_server
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./static/uploads:/app/static/uploads
+      - ./data:/app/data
+    environment:
+      - SERVER_API_KEY=${SERVER_API_KEY:-change_me_please}
+    restart: unless-stopped
