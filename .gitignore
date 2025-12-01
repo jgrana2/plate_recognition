@@ -10,3 +10,5 @@ cars/
 videos/
 car_detection.log
 detected_plates.csv
+server/static/uploads/
+server/data/

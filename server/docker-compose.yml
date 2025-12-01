@@ -9,4 +9,6 @@ services:
       - ./data:/app/data
     environment:
       - SERVER_API_KEY=${SERVER_API_KEY:-change_me_please}
+      - JWT_SECRET=${JWT_SECRET:-change_me_jwt_secret}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:3000}
     restart: unless-stopped
