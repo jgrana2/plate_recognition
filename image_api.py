@@ -17,6 +17,7 @@ client = OpenAI()
 
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8000")
 SERVER_API_KEY = os.getenv("SERVER_API_KEY", "change_me_please")
+CAMERA_ID = os.getenv("CAMERA_ID", "cam-001")
 
 CSV_FILE = 'detected_plates.csv'
 NO_DETECTADO = "No detectado"
@@ -101,7 +102,8 @@ def upload_to_server(metadata, image_path):
                 'brand': metadata.get('marca', NO_DETECTADO),
                 'model': metadata.get('modelo', NO_DETECTADO),
                 'color': metadata.get('color', NO_DETECTADO),
-                'body_type': metadata.get('tipo_carroceria', NO_DETECTADO)
+                'body_type': metadata.get('tipo_carroceria', NO_DETECTADO),
+                'camera_id': CAMERA_ID
             }
             response = requests.post(url, headers=headers, files=files, data=data)
             
