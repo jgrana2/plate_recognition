@@ -25,6 +25,11 @@ CSV_HEADERS = ['placa', 'marca', 'modelo', 'color', 'tipo_carroceria', 'fecha', 
 METADATA_FIELDS = ['placa', 'marca', 'modelo', 'color', 'tipo_carroceria']
 
 def initialize_csv(file_path):
+    # If it exists as a directory (Docker mount issue), remove it
+    if os.path.isdir(file_path):
+        import shutil
+        shutil.rmtree(file_path)
+    
     if not os.path.isfile(file_path):
         with open(file_path, mode='w', newline='', encoding='utf-8') as csvfile:
             writer = csv.writer(csvfile)
