@@ -163,7 +163,12 @@ class VideoProcessor:
         """Process RTSP stream"""
         logger.info(f"Connecting to RTSP stream: {rtsp_url}")
         try:
-            container = av.open(rtsp_url)
+            # Add TCP transport and timeout options for reliable RTSP connection
+            options = {
+                'rtsp_transport': 'tcp',  # Force TCP transport (more reliable than UDP)
+                'stimeout': '5000000',     # 5 second timeout in microseconds
+            }
+            container = av.open(rtsp_url, options=options)
             logger.info("Successfully connected to RTSP stream")
             
             for packet in container.demux(video=0):
@@ -246,10 +251,10 @@ def main():
     processor = VideoProcessor()
     
     # Process video files first
-    video_folder = "videos/"
-    logger.info("Starting video folder processing...")
-    processor.process_video_folder(video_folder)
-    logger.info("Completed video folder processing")
+    # video_folder = "videos/"
+    # logger.info("Starting video folder processing...")
+    # processor.process_video_folder(video_folder)
+    # logger.info("Completed video folder processing")
     
     # Then process RTSP stream
     rtsp_url = 'rtsp://admin:@192.168.1.10:554/stream1'
